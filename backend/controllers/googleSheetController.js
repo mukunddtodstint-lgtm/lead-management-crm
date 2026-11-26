@@ -35,7 +35,7 @@ const checkSalesManager = (req, res) => {
 // Decrypt Google Refresh Token
 const decryptToken = (encryptedData) => {
   const encryptionKey = Buffer.from(
-    process.env.GOOGLE_TOKEN_ENCRYPTION_KEY,
+    process.env.GOOGLE_TOKEN_ENCRYPTION_KEY || "",
     "hex"
   );
 
@@ -82,7 +82,7 @@ const getCompanyGoogleClient = async (companyId) => {
 
   if (!connection) {
     throw new Error(
-      "Please connect your Google account before adding spreadsheets."
+      "This spreadsheet is not publicly accessible. Please connect your Google account or make the sheet public."
     );
   }
 
@@ -99,7 +99,7 @@ const getCompanyGoogleClient = async (companyId) => {
   return oauth2Client;
 };
 
-// Extract Spreadsheet ID
+// Extract Spreadsheet ID safely
 const extractSpreadsheetId = (url) => {
   try {
     const parsedUrl = new URL(url);
@@ -123,6 +123,138 @@ const extractSpreadsheetId = (url) => {
   }
 };
 
+// CSV Parser - supports quoted values and commas
+const parseCSV = (csvText) => {
+  const rows = [];
+  let row = [];
+  let value = "";
+  let insideQuotes = false;
+
+  for (let i = 0; i < csvText.length; i++) {
+    const char = csvText[i];
+    const nextChar = csvText[i + 1];
+
+    if (char === '"' && insideQuotes && nextChar === '"') {
+      value += '"';
+      i++;
+    } else if (char === '"') {
+      insideQuotes = !insideQuotes;
+    } else if (char === "," && !insideQuotes) {
+      row.push(value);
+      value = "";
+    } else if (
+      (char === "\n" || char === "\r") &&
+      !insideQuotes
+    ) {
+      if (char === "\r" && nextChar === "\n") {
+        i++;
+      }
+
+      row.push(value);
+
+      if (row.some(cell => cell.trim() !== "")) {
+        rows.push(row);
+      }
+
+      row = [];
+      value = "";
+    } else {
+      value += char;
+    }
+  }
+
+  row.push(value);
+
+  if (row.some(cell => cell.trim() !== "")) {
+    rows.push(row);
+  }
+
+  if (rows.length > 0 && rows[0][0]) {
+    rows[0][0] = rows[0][0].replace(/^\uFEFF/, "");
+  }
+
+  return rows;
+};
+
+// Fetch Public Google Sheet as CSV
+const getPublicSheetRows = async (spreadsheetId, sheetName) => {
+  const csvUrl =
+    `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq` +
+    `?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+
+  const response = await fetch(csvUrl, {
+    method: "GET",
+    redirect: "follow",
+    signal: AbortSignal.timeout(20000),
+    headers: {
+      Accept: "text/csv,text/plain"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Public Google Sheet request failed (${response.status}).`
+    );
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  const text = await response.text();
+
+  if (
+    !text.trim() ||
+    text.trim().startsWith("<!DOCTYPE") ||
+    text.trim().startsWith("<html") ||
+    contentType.includes("text/html")
+  ) {
+    throw new Error(
+      "Google Sheet is not publicly accessible or the requested tab was not found."
+    );
+  }
+
+  return parseCSV(text);
+};
+
+// Fetch Sheet Rows: Public First, OAuth Fallback
+const getSheetRows = async (savedSheet, companyId) => {
+  try {
+    return await getPublicSheetRows(
+      savedSheet.spreadsheetId,
+      savedSheet.sheetName
+    );
+  } catch (publicError) {
+    console.log(
+      "Public Sheet access unavailable. Trying Google OAuth..."
+    );
+
+    try {
+      const oauth2Client = await getCompanyGoogleClient(companyId);
+
+      const sheetsApi = google.sheets({
+        version: "v4",
+        auth: oauth2Client
+      });
+
+      const range =
+        `'${savedSheet.sheetName.replace(/'/g, "''")}'!A:ZZ`;
+
+      const response = await sheetsApi.spreadsheets.values.get({
+        spreadsheetId: savedSheet.spreadsheetId,
+        range
+      });
+
+      return response.data.values || [];
+
+    } catch (oauthError) {
+      console.error("Public Sheet Error:", publicError.message);
+      console.error("OAuth Sheet Error:", oauthError.message);
+
+      throw new Error(
+        "Unable to access this Google Sheet. Make it public with Viewer access or connect the Google Account that has permission to view it."
+      );
+    }
+  }
+};
+
 // Add Google Sheet
 const addGoogleSheet = async (req, res) => {
   try {
@@ -142,9 +274,10 @@ const addGoogleSheet = async (req, res) => {
       });
     }
 
-    const spreadsheetId = extractSpreadsheetId(
-      spreadsheetUrl.trim()
-    );
+    const cleanUrl = spreadsheetUrl.trim();
+    const cleanSheetName = sheetName.trim();
+
+    const spreadsheetId = extractSpreadsheetId(cleanUrl);
 
     if (!spreadsheetId) {
       return res.status(400).json({
@@ -153,65 +286,77 @@ const addGoogleSheet = async (req, res) => {
       });
     }
 
-    const cleanSheetName = sheetName.trim();
+    let accessMethod = "public";
 
-    const oauth2Client = await getCompanyGoogleClient(
-      req.user.companyId
-    );
-
-    const sheetsApi = google.sheets({
-      version: "v4",
-      auth: oauth2Client
-    });
-
-    const spreadsheetResponse =
-      await sheetsApi.spreadsheets.get({
+    // First try public CSV access
+    try {
+      await getPublicSheetRows(
         spreadsheetId,
-        fields: "spreadsheetId,properties.title,sheets.properties"
+        cleanSheetName
+      );
+    } catch (publicError) {
+      // If not public, verify using connected OAuth account
+      const oauth2Client = await getCompanyGoogleClient(
+        req.user.companyId
+      );
+
+      const sheetsApi = google.sheets({
+        version: "v4",
+        auth: oauth2Client
       });
 
-    const availableTabs =
-      spreadsheetResponse.data.sheets || [];
+      const spreadsheetResponse =
+        await sheetsApi.spreadsheets.get({
+          spreadsheetId,
+          fields: "spreadsheetId,properties.title,sheets.properties"
+        });
 
-    const tabExists = availableTabs.some(
-      tab => tab.properties.title === cleanSheetName
-    );
+      const availableTabs =
+        spreadsheetResponse.data.sheets || [];
 
-    if (!tabExists) {
-      return res.status(400).json({
-        success: false,
-        message: `Tab "${cleanSheetName}" does not exist in this spreadsheet.`,
-        availableTabs: availableTabs.map(
-          tab => tab.properties.title
-        )
-      });
+      const tabExists = availableTabs.some(
+        tab => tab.properties.title === cleanSheetName
+      );
+
+      if (!tabExists) {
+        return res.status(400).json({
+          success: false,
+          message: `Tab "${cleanSheetName}" does not exist in this spreadsheet.`,
+          availableTabs: availableTabs.map(
+            tab => tab.properties.title
+          )
+        });
+      }
+
+      accessMethod = "oauth";
     }
 
-  const savedSheet = await GoogleSheet.findOneAndUpdate(
-  {
-    companyId: req.user.companyId,
-    spreadsheetId,
-    sheetName,
-  },
-  {
-    $set: {
-      addedBy: req.user.userId,
-      spreadsheetUrl,
-      status: "active",
-    },
-  },
-  {
-    upsert: true,
-    returnDocument: "after",
-    runValidators: true,
-    setDefaultsOnInsert: true,
-  }
-);
+    const savedSheet = await GoogleSheet.findOneAndUpdate(
+      {
+        companyId: req.user.companyId,
+        spreadsheetId,
+        sheetName: cleanSheetName
+      },
+      {
+        $set: {
+          addedBy: req.user.userId,
+          spreadsheetUrl: cleanUrl,
+          status: "active"
+        }
+      },
+      {
+        upsert: true,
+        returnDocument: "after",
+        runValidators: true,
+        setDefaultsOnInsert: true
+      }
+    );
 
     return res.status(201).json({
       success: true,
-      message: "Google Sheet access verified and added successfully.",
-      sheet: newSheet
+      message: "Google Sheet added successfully.",
+      accessMethod,
+      sheet: savedSheet
     });
 
   } catch (error) {
@@ -234,7 +379,7 @@ const addGoogleSheet = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message ||
-        "Unable to verify Google Sheet access."
+        "Unable to add Google Sheet."
     });
   }
 };
@@ -291,24 +436,10 @@ const previewGoogleSheet = async (req, res) => {
       });
     }
 
-    const oauth2Client = await getCompanyGoogleClient(
+    const rows = await getSheetRows(
+      savedSheet,
       req.user.companyId
     );
-
-    const sheetsApi = google.sheets({
-      version: "v4",
-      auth: oauth2Client
-    });
-
-    const range =
-      `'${savedSheet.sheetName.replace(/'/g, "''")}'!A:ZZ`;
-
-    const response = await sheetsApi.spreadsheets.values.get({
-      spreadsheetId: savedSheet.spreadsheetId,
-      range
-    });
-
-    const rows = response.data.values || [];
 
     if (rows.length === 0) {
       return res.status(200).json({
@@ -339,14 +470,13 @@ const previewGoogleSheet = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Unable to read Google Sheet data."
+      message: error.message ||
+        "Unable to read Google Sheet data."
     });
   }
 };
 
 // Import Selected Leads from Google Sheet
-
-
 const importGoogleSheetLeads = async (req, res) => {
   try {
     if (!checkSalesManager(req, res)) return;
@@ -373,30 +503,14 @@ const importGoogleSheetLeads = async (req, res) => {
       });
     }
 
-    const oauth2Client = await getCompanyGoogleClient(
+    const rows = await getSheetRows(
+      savedSheet,
       req.user.companyId
     );
 
-    const sheetsApi = google.sheets({
-      version: "v4",
-      auth: oauth2Client
-    });
-
-    const range =
-      `'${savedSheet.sheetName.replace(/'/g, "''")}'!A:ZZ`;
-
-    const response = await sheetsApi.spreadsheets.values.get({
-      spreadsheetId: savedSheet.spreadsheetId,
-      range
-    });
-
-    const rows = response.data.values || [];
-
-    // Every successful sync gets a new batch ID
     const batchId = crypto.randomUUID();
     const importTime = new Date();
 
-    // Even an empty import becomes the latest batch
     if (rows.length < 2) {
       savedSheet.latestImportBatchId = batchId;
       savedSheet.latestImportedAt = importTime;
@@ -497,7 +611,7 @@ const importGoogleSheetLeads = async (req, res) => {
 
       const sourceRowId = `fingerprint:${fingerprint}`;
 
-      // Check whether this lead already exists in this company
+      // Check duplicate within this company only
       const duplicateConditions = [];
 
       if (normalizedPhone) {
@@ -533,6 +647,7 @@ const importGoogleSheetLeads = async (req, res) => {
         });
 
         imported++;
+
       } catch (createError) {
         if (createError.code === 11000) {
           duplicates++;
@@ -543,7 +658,6 @@ const importGoogleSheetLeads = async (req, res) => {
       }
     }
 
-    // Save latest batch only after import processing succeeds
     savedSheet.latestImportBatchId = batchId;
     savedSheet.latestImportedAt = importTime;
     savedSheet.lastSyncedAt = importTime;
@@ -570,8 +684,6 @@ const importGoogleSheetLeads = async (req, res) => {
     });
   }
 };
-
-
 
 module.exports = {
   addGoogleSheet,

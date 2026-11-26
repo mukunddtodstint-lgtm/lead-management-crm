@@ -44,9 +44,13 @@ function GoogleSheets() {
       setLoading(true);
       setMessage("");
 
-      const response = await api.get(
-        "/google-sheets/oauth/start"
-      );
+      const response = await api.post(
+  "/google-sheets/sheets",
+  {
+    spreadsheetUrl: spreadsheetUrl.trim(),
+    sheetName: sheetName.trim()
+  }
+);
 
       const authorizationUrl =
         response.data.authorizationUrl;
