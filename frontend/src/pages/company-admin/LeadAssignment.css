@@ -1,0 +1,264 @@
+
+.lead-assignment-page {
+  width: 100%;
+  color: #20202a;
+}
+
+.la-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.la-page-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 7px;
+}
+
+.la-page-header p {
+  color: #777;
+  font-size: 14px;
+  margin: 0;
+}
+
+.la-summary-card {
+  background: #fff;
+  border: 1px solid #e9e9ef;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 22px;
+}
+
+.la-summary-card span {
+  display: block;
+  color: #777;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.la-summary-card strong {
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.la-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #fff;
+  padding: 18px;
+  border: 1px solid #e9e9ef;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.la-search-form {
+  display: flex;
+  flex: 1;
+  min-width: 230px;
+  gap: 8px;
+}
+
+.la-search-form input,
+.la-toolbar select {
+  height: 43px;
+  border: 1px solid #dedee6;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #fff;
+  font-size: 14px;
+  outline: none;
+}
+
+.la-search-form input {
+  width: 100%;
+}
+
+.la-search-form input:focus,
+.la-toolbar select:focus {
+  border-color: #4f46e5;
+}
+
+.la-toolbar button {
+  min-height: 43px;
+  padding: 0 15px;
+  border: none;
+  border-radius: 8px;
+  background: #f1f1f5;
+  color: #333;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.la-toolbar .la-assign-btn {
+  background: #4f46e5;
+  color: #fff;
+}
+
+.la-toolbar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.la-message {
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 14px;
+}
+
+.la-table-card {
+  background: #fff;
+  border: 1px solid #e9e9ef;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.la-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.la-table {
+  width: 100%;
+  min-width: 750px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.la-table th {
+  background: #f8f8fb;
+  color: #666;
+  padding: 15px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-bottom: 1px solid #e9e9ef;
+}
+
+.la-table td {
+  padding: 14px;
+  font-size: 13px;
+  border-bottom: 1px solid #f0f0f3;
+  color: #444;
+}
+
+.la-table tbody tr:hover {
+  background: #fafaff;
+}
+
+.la-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #4f46e5;
+}
+
+.la-status {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: #f1f1f5;
+  color: #555;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.la-status-new {
+  background: #eaf2ff;
+  color: #2563eb;
+}
+
+.la-status-qualified {
+  background: #e8f8ee;
+  color: #15803d;
+}
+
+.la-status-not_qualified {
+  background: #fff0f0;
+  color: #dc2626;
+}
+
+.la-status-not_connected {
+  background: #fff7e6;
+  color: #b7791f;
+}
+
+.la-assigned-name {
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.la-unassigned {
+  color: #999;
+}
+
+.la-empty-state {
+  padding: 45px 15px !important;
+  text-align: center;
+  color: #888 !important;
+}
+
+.la-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  flex-wrap: wrap;
+}
+
+.la-pagination span {
+  font-size: 13px;
+  color: #777;
+}
+
+.la-pagination button {
+  padding: 9px 16px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.la-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .la-page-header h2 {
+    font-size: 21px;
+  }
+
+  .la-toolbar {
+    padding: 13px;
+  }
+
+  .la-search-form {
+    flex-basis: 100%;
+  }
+
+  .la-toolbar select,
+  .la-toolbar .la-assign-btn {
+    width: 100%;
+  }
+
+  .la-pagination {
+    justify-content: center;
+  }
+}

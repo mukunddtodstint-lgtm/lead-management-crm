@@ -1,0 +1,352 @@
+
+/* =================================
+   SALES EXECUTIVE DASHBOARD
+================================= */
+
+.sales-dashboard {
+  min-height: 100vh;
+  padding: 30px;
+  background: #f5f6fa;
+  color: #20202a;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+.sales-dashboard * {
+  box-sizing: border-box;
+}
+
+.sales-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-bottom: 25px;
+}
+
+.sales-header h1 {
+  font-size: 27px;
+  color: #980d20;
+  margin: 0 0 8px;
+}
+
+.sales-header p {
+  color: #777;
+  margin: 0;
+}
+
+.sales-logout {
+  background: #980d20;
+  color: white;
+  border: none;
+  padding: 11px 20px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.sales-logout:hover {
+  background: #720919;
+}
+
+/* Statistics */
+
+.sales-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 25px;
+}
+
+.sales-stat-card {
+  background: white;
+  padding: 22px;
+  border-radius: 12px;
+  border: 1px solid #ececf0;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+}
+
+.sales-stat-card p {
+  color: #777;
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.sales-stat-card h2 {
+  color: #980d20;
+  font-size: 27px;
+  margin: 0;
+}
+
+/* Lead Table */
+
+.sales-leads-card {
+  background: white;
+  padding: 22px;
+  border-radius: 12px;
+  border: 1px solid #ececf0;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+}
+
+.sales-leads-card h2 {
+  margin: 0 0 20px;
+  font-size: 19px;
+}
+
+.sales-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.sales-table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+}
+
+.sales-table th {
+  background: #f5f5f7;
+  color: #444;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 15px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sales-table td {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  font-size: 13px;
+  color: #444;
+  text-align: left;
+}
+
+.sales-table tbody tr:hover {
+  background: #fff8f8;
+}
+
+.sales-status {
+  display: inline-block;
+  padding: 6px 11px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #f1f1f1;
+  color: #555;
+  text-transform: capitalize;
+}
+
+.sales-status.qualified {
+  background: #e6f7ed;
+  color: #16834a;
+}
+
+.sales-status.not_qualified {
+  background: #fdeaea;
+  color: #c62828;
+}
+
+.sales-status.not_connected {
+  background: #fff3df;
+  color: #b66a00;
+}
+
+.sales-status.new {
+  background: #e9efff;
+  color: #315acb;
+}
+
+/* Buttons */
+
+.sales-btn {
+  padding: 9px 14px;
+  background: #980d20;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sales-btn:hover {
+  background: #720919;
+}
+
+.sales-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Update Lead Form */
+
+.sales-form-card {
+  background: white;
+  padding: 25px;
+  margin-top: 25px;
+  border-radius: 12px;
+  border: 1px solid #ececf0;
+  max-width: 600px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+}
+
+.sales-form-card h2 {
+  color: #980d20;
+  margin: 0 0 10px;
+}
+
+.sales-form-card label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 15px 0 7px;
+}
+
+.sales-form-card input,
+.sales-form-card select,
+.sales-form-card textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  outline: none;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.sales-form-card input:focus,
+.sales-form-card select:focus,
+.sales-form-card textarea:focus {
+  border-color: #980d20;
+  box-shadow: 0 0 0 3px rgba(152, 13, 32, 0.08);
+}
+
+.sales-form-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.sales-cancel-btn {
+  padding: 10px 17px;
+  background: #64748b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Messages */
+
+.sales-message {
+  padding: 12px 15px;
+  margin: 15px 0;
+  border-radius: 7px;
+  background: #eaf7ee;
+  color: #187442;
+  font-size: 13px;
+}
+
+.sales-error {
+  padding: 12px 15px;
+  margin: 15px 0;
+  border-radius: 7px;
+  background: #fdeaea;
+  color: #c62828;
+  font-size: 13px;
+}
+
+.sales-empty {
+  text-align: center;
+  padding: 40px 15px;
+  color: #777;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .sales-dashboard {
+    padding: 18px;
+  }
+
+  .sales-header h1 {
+    font-size: 22px;
+  }
+
+  .sales-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .sales-leads-card {
+    padding: 15px;
+  }
+
+  .sales-form-card {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sales-dashboard {
+    padding: 12px;
+  }
+
+  .sales-header {
+    align-items: flex-start;
+  }
+
+  .sales-logout {
+    width: 100%;
+  }
+}
+
+
+.sales-view-navigation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+  flex-wrap: wrap;
+}
+
+.sales-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 12px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sales-view-btn:hover {
+  background: #f1f5f9;
+}
+
+.sales-view-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+@media (max-width: 600px) {
+  .sales-view-navigation {
+    gap: 8px;
+  }
+
+  .sales-view-btn {
+    flex: 1;
+    padding: 11px 12px;
+    font-size: 13px;
+  }
+}
+

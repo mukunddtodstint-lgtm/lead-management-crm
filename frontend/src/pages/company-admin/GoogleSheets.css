@@ -1,0 +1,544 @@
+
+.google-sheets-page {
+  width: 100%;
+  padding: 28px;
+  color: #1e293b;
+  font-family: Arial, sans-serif;
+}
+
+.google-sheets-header {
+  margin-bottom: 28px;
+}
+
+.google-sheets-header h2 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #172554;
+  margin-bottom: 8px;
+}
+
+.google-sheets-header p {
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* Main Cards */
+
+.google-sheets-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.04);
+  max-width: 100%;
+}
+
+.google-sheets-card-top {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.google-sheets-icon {
+  width: 55px;
+  height: 55px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.google-sheets-card-top h3 {
+  font-size: 19px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 5px;
+}
+
+.google-sheets-card-top p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.google-sheets-description {
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 18px;
+}
+
+/* Security Information */
+
+.google-sheets-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.google-sheets-info svg {
+  flex-shrink: 0;
+}
+
+.google-sheets-info p {
+  font-size: 13px;
+  color: #1e40af;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Form */
+
+.google-sheets-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.google-sheets-card form label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-top: 8px;
+}
+
+.google-sheets-card form input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 46px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 14px;
+  color: #1e293b;
+  outline: none;
+  transition: 0.2s ease;
+}
+
+.google-sheets-card form input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.google-sheets-card form input::placeholder {
+  color: #94a3b8;
+}
+
+/* Buttons */
+
+.google-sheets-connect-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 0 20px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 10px;
+}
+
+.google-sheets-connect-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.google-sheets-connect-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Messages */
+
+.google-sheets-error {
+  color: #dc2626;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+/* Saved Sheets */
+
+.google-sheet-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 15px;
+  background: #f8fafc;
+  overflow-wrap: anywhere;
+}
+
+.google-sheet-item h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px;
+}
+
+.google-sheet-item p {
+  font-size: 13px;
+  color: #2563eb;
+  margin: 0 0 8px;
+}
+
+.google-sheet-item small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .google-sheets-page {
+    padding: 16px;
+  }
+
+  .google-sheets-header h2 {
+    font-size: 22px;
+  }
+
+  .google-sheets-card {
+    padding: 18px;
+  }
+
+  .google-sheets-card-top h3 {
+    font-size: 17px;
+  }
+
+  .google-sheets-connect-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .google-sheets-card-top {
+    align-items: flex-start;
+  }
+
+  .google-sheets-icon {
+    width: 45px;
+    height: 45px;
+  }
+}
+
+.google-sheet-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 18px;
+}
+
+.google-sheet-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+.google-sheet-table th,
+.google-sheet-table td {
+  padding: 13px 15px;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.google-sheet-table th {
+  background: #eff6ff;
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.google-sheet-table td {
+  color: #475569;
+}
+
+.google-sheet-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+
+.google-sheets-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 9px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.google-sheets-message.success {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.google-sheets-message.error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.google-sheets-refresh-btn,
+.google-sheets-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.google-sheets-refresh-btn {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.google-sheets-preview-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+}
+
+.google-sheets-refresh-btn:disabled,
+.google-sheets-preview-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-sheets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.google-sheet-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.google-sheet-details {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+}
+
+.google-sheet-file-icon {
+  width: 43px;
+  height: 43px;
+  border-radius: 9px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.google-sheet-file-info {
+  min-width: 0;
+}
+
+.google-sheet-file-info p {
+  overflow-wrap: anywhere;
+}
+
+.google-sheets-empty {
+  text-align: center;
+  padding: 30px 15px;
+  color: #64748b;
+}
+
+.google-sheets-empty svg {
+  margin-bottom: 10px;
+  color: #94a3b8;
+}
+
+.google-sheets-empty p {
+  margin: 5px 0;
+  font-weight: 600;
+}
+
+.google-sheets-empty small {
+  font-size: 12px;
+}
+
+.google-sheets-preview-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.google-sheets-preview-summary > div {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.google-sheets-preview-summary span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.google-sheets-preview-summary strong {
+  font-size: 23px;
+  color: #1e293b;
+}
+
+.google-sheet-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 15px;
+}
+
+.google-sheet-table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+}
+
+.google-sheet-table th,
+.google-sheet-table td {
+  padding: 13px 15px;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.google-sheet-table th {
+  background: #eff6ff;
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.google-sheet-table td {
+  color: #475569;
+}
+
+.google-sheet-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.spinning {
+  animation: googleSheetSpin 1s linear infinite;
+}
+
+@keyframes googleSheetSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 650px) {
+  .google-sheet-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .google-sheets-preview-btn {
+    width: 100%;
+  }
+
+  .google-sheets-preview-summary {
+    grid-template-columns: 1fr;
+  }
+}
+.google-sheets-import-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 15px;
+  margin-left: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #15803d;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.google-sheets-import-btn:hover {
+  background: #166534;
+}
+
+.google-sheets-import-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+.google-sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.google-sheets-import-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 8px;
+  background: #15803d;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.google-sheets-import-btn:hover {
+  background: #166534;
+}
+
+.google-sheets-import-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 650px) {
+  .google-sheet-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .google-sheet-actions button {
+    width: 100%;
+    margin-left: 0;
+  }
+}
