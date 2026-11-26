@@ -1,7 +1,7 @@
 
 const Lead = require("../models/lead");
 const User = require("../models/user");
-const Company = require("../models/Company");
+const Company = require("../models/company");
 const GoogleSheet = require("../models/GoogleSheet");
 const mongoose = require("mongoose");
 
