@@ -1,7 +1,7 @@
 
 const GoogleSheet = require("../models/GoogleSheet");
 const GoogleSheetConnection = require("../models/GoogleSheetConnection");
-const Lead = require("../models/lead");
+const Lead = require("../models/Lead");
 
 const crypto = require("crypto");
 const mongoose = require("mongoose");
