@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 
 const SalesTarget = require("../models/SalesTarget");
 const User = require("../models/user");
-const Lead = require("../models/lead");
+const Lead = require("../models/Lead");
 
 // Validate and convert YYYY-MM into month start/end dates
 const getMonthRange = (month) => {

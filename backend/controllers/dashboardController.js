@@ -2,7 +2,7 @@
 const mongoose = require("mongoose");
 
 const User = require("../models/user");
-const Lead = require("../models/lead");
+const Lead = require("../models/Lead");
 
 // Get all-time company dashboard statistics
 const getDashboardStats = async (req, res) => {
