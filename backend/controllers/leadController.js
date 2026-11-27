@@ -342,11 +342,23 @@ const updateMyLead = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Support common frontend field-name variations
-    const status = String(req.body.status || "")
+    // Normalize status
+    const rawStatus = String(req.body.status || "")
       .trim()
-      .toLowerCase();
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/-/g, "_");
 
+    const statusAliases = {
+      qualified: "qualified",
+      not_qualified: "not_qualified",
+      not_connected: "not_connected",
+      converted: "converted",
+    };
+
+    const status = statusAliases[rawStatus];
+
+    // Support different remarks field names
     const remarks = String(
       req.body.remarks ??
       req.body.remark ??
@@ -354,13 +366,14 @@ const updateMyLead = async (req, res) => {
       ""
     ).trim();
 
+    // Support different follow-up date field names
     const rawFollowUpDate =
       req.body.nextFollowUpDate ??
       req.body.nextFollowupDate ??
       req.body.followUpDate ??
       null;
 
-    // Validate Lead ID
+    // 1. Validate Lead ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -368,32 +381,30 @@ const updateMyLead = async (req, res) => {
       });
     }
 
-    // Allowed statuses
-    const allowedStatuses = [
-      "qualified",
-      "not_qualified",
-      "not_connected",
-      "converted",
-    ];
-
-    if (!allowedStatuses.includes(status)) {
+    // 2. Validate status
+    if (!status) {
       return res.status(400).json({
         success: false,
-        message: "Invalid lead status.",
+        message: "Please select a valid lead status.",
         receivedStatus: req.body.status,
-        allowedStatuses,
+        allowedStatuses: [
+          "qualified",
+          "not_qualified",
+          "not_connected",
+          "converted",
+        ],
       });
     }
 
-    // Remarks validation
+    // 3. Validate remarks
     if (!remarks) {
       return res.status(400).json({
         success: false,
-        message: "Remarks are mandatory for every lead update.",
+        message: "Remarks are mandatory.",
       });
     }
 
-    // Validate follow-up date
+    // 4. Validate follow-up date
     let followUpDate = null;
 
     if (status !== "converted" && rawFollowUpDate) {
@@ -408,7 +419,7 @@ const updateMyLead = async (req, res) => {
       }
     }
 
-    // Find lead belonging to the same company and assigned executive
+    // 5. Find lead within the same company and assigned executive
     const lead = await Lead.findOne({
       _id: id,
       companyId: req.user.companyId,
@@ -424,12 +435,12 @@ const updateMyLead = async (req, res) => {
 
     const now = new Date();
 
-    // Update lead
+    // 6. Update lead fields
     lead.status = status;
     lead.remarks = remarks;
     lead.nextFollowUpDate = followUpDate;
 
-    // Conversion handling
+    // 7. Handle conversion date
     if (status === "converted") {
       if (!lead.convertedAt) {
         lead.convertedAt = now;
@@ -438,12 +449,12 @@ const updateMyLead = async (req, res) => {
       lead.convertedAt = null;
     }
 
-    // Initialize activity history if missing
+    // 8. Initialize activity history
     if (!Array.isArray(lead.activityHistory)) {
       lead.activityHistory = [];
     }
 
-    // Save activity history
+    // 9. Save activity history
     lead.activityHistory.push({
       status,
       remarks,
@@ -452,9 +463,10 @@ const updateMyLead = async (req, res) => {
       updatedAt: now,
     });
 
+    // 10. Save lead
     await lead.save();
 
-    // Get company field settings
+    // 11. Get company field settings
     const company = await Company.findById(req.user.companyId)
       .select("leadFieldSettings")
       .lean();
@@ -464,6 +476,7 @@ const updateMyLead = async (req, res) => {
       ...(company?.leadFieldSettings || {}),
     };
 
+    // 12. Send response
     return res.status(200).json({
       success: true,
       message:
@@ -476,6 +489,15 @@ const updateMyLead = async (req, res) => {
   } catch (error) {
     console.error("Update My Lead Error:", error);
 
+    // Mongoose validation errors
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: "Lead validation failed.",
+        error: error.message,
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Unable to update lead.",
@@ -483,6 +505,7 @@ const updateMyLead = async (req, res) => {
     });
   }
 };
+
 
     let followUpDate = null;
 
