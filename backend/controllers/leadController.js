@@ -1,4 +1,3 @@
-
 const Lead = require("../models/Lead");
 const User = require("../models/user");
 const Company = require("../models/company");
@@ -20,14 +19,14 @@ const defaultLeadFieldSettings = {
 };
 
 // ==========================================
-// ESCAPE SPECIAL CHARACTERS IN SEARCH
+// HELPER: ESCAPE SEARCH REGEX
 // ==========================================
 
 const escapeRegex = (value) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // ==========================================
-// GET LATEST IMPORT BATCH FILTER
+// HELPER: GET LATEST IMPORT BATCH
 // ==========================================
 
 const getLatestBatchFilter = async (companyId) => {
@@ -39,7 +38,7 @@ const getLatestBatchFilter = async (companyId) => {
     .select("_id latestImportBatchId")
     .lean();
 
-  if (sheets.length === 0) {
+  if (!sheets.length) {
     return { _id: null };
   }
 
@@ -52,10 +51,27 @@ const getLatestBatchFilter = async (companyId) => {
 };
 
 // ==========================================
-// FILTER HIDDEN LEAD FIELDS
+// HELPER: GET COMPANY FIELD SETTINGS
+// ==========================================
+
+const getCompanyFieldSettings = async (companyId) => {
+  const company = await Company.findById(companyId)
+    .select("leadFieldSettings")
+    .lean();
+
+  return {
+    ...defaultLeadFieldSettings,
+    ...(company?.leadFieldSettings || {}),
+  };
+};
+
+// ==========================================
+// HELPER: HIDE DISABLED LEAD FIELDS
 // ==========================================
 
 const filterLeadFields = (lead, settings) => {
+  if (!lead) return lead;
+
   const filteredLead =
     typeof lead.toObject === "function"
       ? lead.toObject()
@@ -75,7 +91,7 @@ const filterLeadFields = (lead, settings) => {
 };
 
 // ==========================================
-// 1. SALES MANAGER: GET LATEST BATCH LEADS
+// 1. SALES MANAGER: GET COMPANY LEADS
 // ==========================================
 
 const getCompanyLeads = async (req, res) => {
@@ -103,7 +119,7 @@ const getCompanyLeads = async (req, res) => {
       conditions.push({ status });
     }
 
-    if (search.trim()) {
+    if (String(search).trim()) {
       const searchRegex = new RegExp(
         escapeRegex(search.trim()),
         "i"
@@ -138,7 +154,6 @@ const getCompanyLeads = async (req, res) => {
       totalPages: Math.ceil(totalLeads / pageSize),
       leads,
     });
-
   } catch (error) {
     console.error("Get Company Leads Error:", error);
 
@@ -150,7 +165,7 @@ const getCompanyLeads = async (req, res) => {
 };
 
 // ==========================================
-// 2. SALES MANAGER: ASSIGN LATEST BATCH LEADS
+// 2. SALES MANAGER: ASSIGN LEADS
 // ==========================================
 
 const assignLeads = async (req, res) => {
@@ -169,11 +184,11 @@ const assignLeads = async (req, res) => {
       });
     }
 
-    const validLeadIds = leadIds.every((id) =>
-      mongoose.Types.ObjectId.isValid(id)
-    );
-
-    if (!validLeadIds) {
+    if (
+      !leadIds.every((id) =>
+        mongoose.Types.ObjectId.isValid(id)
+      )
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid lead ID provided.",
@@ -223,7 +238,6 @@ const assignLeads = async (req, res) => {
       assignedCount: result.modifiedCount,
       skippedCount: leadIds.length - result.modifiedCount,
     });
-
   } catch (error) {
     console.error("Assign Leads Error:", error);
 
@@ -235,7 +249,7 @@ const assignLeads = async (req, res) => {
 };
 
 // ==========================================
-// 3. SALES EXECUTIVE: GET MY ASSIGNED LEADS
+// 3. SALES EXECUTIVE: GET MY LEADS
 // ==========================================
 
 const getMyLeads = async (req, res) => {
@@ -250,23 +264,10 @@ const getMyLeads = async (req, res) => {
     const pageNumber = Math.max(1, Number(page) || 1);
     const pageSize = Math.min(100, Math.max(1, Number(limit) || 20));
 
-    const company = await Company.findById(req.user.companyId)
-      .select("leadFieldSettings")
-      .lean();
+    const settings = await getCompanyFieldSettings(
+      req.user.companyId
+    );
 
-    if (!company) {
-      return res.status(403).json({
-        success: false,
-        message: "Company not found.",
-      });
-    }
-
-    const settings = {
-      ...defaultLeadFieldSettings,
-      ...(company.leadFieldSettings || {}),
-    };
-
-    // All assigned leads remain visible to this executive
     const filter = {
       companyId: req.user.companyId,
       assignedTo: req.user.userId,
@@ -276,7 +277,7 @@ const getMyLeads = async (req, res) => {
       filter.status = status;
     }
 
-    if (search.trim()) {
+    if (String(search).trim()) {
       const searchRegex = new RegExp(
         escapeRegex(search.trim()),
         "i"
@@ -289,7 +290,7 @@ const getMyLeads = async (req, res) => {
         "city",
       ].filter((field) => settings[field] !== false);
 
-      if (searchableFields.length > 0) {
+      if (searchableFields.length) {
         filter.$or = searchableFields.map((field) => ({
           [`leadData.${field}`]: searchRegex,
         }));
@@ -318,7 +319,6 @@ const getMyLeads = async (req, res) => {
       totalPages: Math.ceil(totalLeads / pageSize),
       leads: filteredLeads,
     });
-
   } catch (error) {
     console.error("Get My Leads Error:", error);
 
@@ -333,54 +333,17 @@ const getMyLeads = async (req, res) => {
 // 4. SALES EXECUTIVE: UPDATE ASSIGNED LEAD
 // ==========================================
 
-
-// ==========================================
-// 4. SALES EXECUTIVE: UPDATE ASSIGNED LEAD
-// ==========================================
-
-
 const updateMyLead = async (req, res) => {
   try {
-    console.log("BACKEND RECEIVED BODY:", req.body);
-console.log("BACKEND RECEIVED STATUS:", req.body.status);
     console.log("========== LEAD UPDATE DEBUG ==========");
-console.log("Request Body:", JSON.stringify(req.body, null, 2));
-console.log("Received Status:", req.body.status);
-console.log("Status Type:", typeof req.body.status);
-console.log("=======================================");
+    console.log("Lead ID:", req.params.id);
+    console.log("Request Body:", JSON.stringify(req.body, null, 2));
+    console.log("Received Status:", req.body?.status);
+    console.log("=======================================");
+
     const { id } = req.params;
 
-    // 1. Normalize incoming status
-    const rawStatus = String(req.body.status || "")
-      .trim()
-      .toLowerCase()
-      .replace(/[\s-]+/g, "_");
-
-    const statusAliases = {
-      qualified: "qualified",
-      not_qualified: "not_qualified",
-      not_connected: "not_connected",
-      converted: "converted",
-    };
-
-    const status = statusAliases[rawStatus];
-
-    // 2. Normalize remarks
-    const remarks = String(
-      req.body.remarks ??
-      req.body.remark ??
-      req.body.notes ??
-      ""
-    ).trim();
-
-    // 3. Get follow-up date
-    const rawFollowUpDate =
-      req.body.nextFollowUpDate ??
-      req.body.nextFollowupDate ??
-      req.body.followUpDate ??
-      null;
-
-    // 4. Validate Lead ID
+    // Validate lead ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -388,7 +351,12 @@ console.log("=======================================");
       });
     }
 
-    // 5. Validate status
+    // Normalize status
+    const rawStatus = String(req.body?.status || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+
     const allowedStatuses = [
       "qualified",
       "not_qualified",
@@ -396,22 +364,26 @@ console.log("=======================================");
       "converted",
     ];
 
-    if (!status || !allowedStatuses.includes(status)) {
-      console.error("Invalid Lead Status:", {
-        receivedStatus: req.body.status,
-        normalizedStatus: rawStatus,
-      });
-
+    if (!allowedStatuses.includes(rawStatus)) {
       return res.status(400).json({
         success: false,
         message: "Please select a valid lead status.",
-        receivedStatus: req.body.status,
+        receivedStatus: req.body?.status,
         normalizedStatus: rawStatus,
         allowedStatuses,
       });
     }
 
-    // 6. Validate remarks
+    const status = rawStatus;
+
+    // Validate remarks
+    const remarks = String(
+      req.body?.remarks ??
+      req.body?.remark ??
+      req.body?.notes ??
+      ""
+    ).trim();
+
     if (!remarks) {
       return res.status(400).json({
         success: false,
@@ -419,7 +391,13 @@ console.log("=======================================");
       });
     }
 
-    // 7. Validate follow-up date
+    // Get follow-up date
+    const rawFollowUpDate =
+      req.body?.nextFollowUpDate ??
+      req.body?.nextFollowupDate ??
+      req.body?.followUpDate ??
+      null;
+
     let followUpDate = null;
 
     if (status !== "converted" && rawFollowUpDate) {
@@ -434,7 +412,7 @@ console.log("=======================================");
       }
     }
 
-    // 8. Find lead within same company and assigned executive
+    // Find lead belonging to logged-in executive
     const lead = await Lead.findOne({
       _id: id,
       companyId: req.user.companyId,
@@ -450,12 +428,12 @@ console.log("=======================================");
 
     const now = new Date();
 
-    // 9. Update lead
+    // Update lead fields
     lead.status = status;
     lead.remarks = remarks;
     lead.nextFollowUpDate = followUpDate;
 
-    // 10. Handle conversion date
+    // Manage conversion date
     if (status === "converted") {
       if (!lead.convertedAt) {
         lead.convertedAt = now;
@@ -464,12 +442,12 @@ console.log("=======================================");
       lead.convertedAt = null;
     }
 
-    // 11. Initialize activity history
+    // Initialize activity history if missing
     if (!Array.isArray(lead.activityHistory)) {
       lead.activityHistory = [];
     }
 
-    // 12. Add activity history
+    // Save activity history
     lead.activityHistory.push({
       status,
       remarks,
@@ -478,20 +456,18 @@ console.log("=======================================");
       updatedAt: now,
     });
 
-    // 13. Save lead
+    // Save updated lead
     await lead.save();
 
-    // 14. Get company field settings
-    const company = await Company.findById(req.user.companyId)
-      .select("leadFieldSettings")
-      .lean();
+    // Apply company field settings
+    const settings = await getCompanyFieldSettings(
+      req.user.companyId
+    );
 
-    const settings = {
-      ...defaultLeadFieldSettings,
-      ...(company?.leadFieldSettings || {}),
-    };
+    const updatedLead = filterLeadFields(lead, settings);
 
-    // 15. Success response
+    console.log("Lead updated successfully:", lead._id);
+
     return res.status(200).json({
       success: true,
       message:
@@ -499,10 +475,11 @@ console.log("=======================================");
           ? "Lead marked as converted successfully."
           : status === "qualified"
           ? "Lead marked as qualified successfully."
-          : "Lead updated successfully.",
-      lead: filterLeadFields(lead, settings),
+          : status === "not_qualified"
+          ? "Lead marked as not qualified successfully."
+          : "Lead marked as not connected successfully.",
+      lead: updatedLead,
     });
-
   } catch (error) {
     console.error("Update My Lead Error:", error);
 
@@ -521,90 +498,6 @@ console.log("=======================================");
     });
   }
 };
-
-
-
-    let followUpDate = null;
-
-    // Converted leads do not need another follow-up date
-    if (status !== "converted" && nextFollowUpDate) {
-      followUpDate = new Date(nextFollowUpDate);
-
-      if (Number.isNaN(followUpDate.getTime())) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid next follow-up date.",
-        });
-      }
-    }
-
-    const lead = await Lead.findOne({
-      _id: id,
-      companyId: req.user.companyId,
-      assignedTo: req.user.userId,
-    });
-
-    if (!lead) {
-      return res.status(404).json({
-        success: false,
-        message: "Lead not found or not assigned to you.",
-      });
-    }
-
-    const now = new Date();
-
-    lead.status = status;
-    lead.remarks = remarks.trim();
-    lead.nextFollowUpDate = followUpDate;
-
-    if (status === "converted") {
-      // Preserve the first conversion date
-      if (!lead.convertedAt) {
-        lead.convertedAt = now;
-      }
-    } else {
-      // If conversion is reversed, remove active conversion date
-      lead.convertedAt = null;
-    }
-
-    lead.activityHistory.push({
-      status,
-      remarks: remarks.trim(),
-      updatedBy: req.user.userId,
-      nextFollowUpDate: followUpDate,
-      updatedAt: now,
-    });
-
-    await lead.save();
-
-    const company = await Company.findById(req.user.companyId)
-      .select("leadFieldSettings")
-      .lean();
-
-    const settings = {
-      ...defaultLeadFieldSettings,
-      ...(company?.leadFieldSettings || {}),
-    };
-
-    return res.status(200).json({
-      success: true,
-      message:
-        status === "converted"
-          ? "Lead marked as converted successfully."
-          : "Lead updated successfully.",
-      lead: filterLeadFields(lead, settings),
-    });
-
-  } catch (error) {
-    console.error("Update My Lead Error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Unable to update lead.",
-    });
-  }
-};
-
 
 // ==========================================
 // 5. SALES MANAGER: GET LEAD ACTIVITY HISTORY
@@ -626,10 +519,7 @@ const getLeadHistory = async (req, res) => {
       companyId: req.user.companyId,
     })
       .populate("assignedTo", "name employeeId")
-      .populate(
-        "activityHistory.updatedBy",
-        "name employeeId"
-      )
+      .populate("activityHistory.updatedBy", "name employeeId")
       .lean();
 
     if (!lead) {
@@ -648,10 +538,10 @@ const getLeadHistory = async (req, res) => {
         status: lead.status,
         remarks: lead.remarks,
         nextFollowUpDate: lead.nextFollowUpDate,
-        activityHistory: lead.activityHistory,
+        convertedAt: lead.convertedAt,
+        activityHistory: lead.activityHistory || [],
       },
     });
-
   } catch (error) {
     console.error("Get Lead History Error:", error);
 
