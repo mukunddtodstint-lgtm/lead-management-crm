@@ -338,16 +338,16 @@ const getMyLeads = async (req, res) => {
 // 4. SALES EXECUTIVE: UPDATE ASSIGNED LEAD
 // ==========================================
 
+
 const updateMyLead = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Normalize status
+    // 1. Normalize incoming status
     const rawStatus = String(req.body.status || "")
       .trim()
       .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/-/g, "_");
+      .replace(/[\s-]+/g, "_");
 
     const statusAliases = {
       qualified: "qualified",
@@ -358,7 +358,7 @@ const updateMyLead = async (req, res) => {
 
     const status = statusAliases[rawStatus];
 
-    // Support different remarks field names
+    // 2. Normalize remarks
     const remarks = String(
       req.body.remarks ??
       req.body.remark ??
@@ -366,14 +366,14 @@ const updateMyLead = async (req, res) => {
       ""
     ).trim();
 
-    // Support different follow-up date field names
+    // 3. Get follow-up date
     const rawFollowUpDate =
       req.body.nextFollowUpDate ??
       req.body.nextFollowupDate ??
       req.body.followUpDate ??
       null;
 
-    // 1. Validate Lead ID
+    // 4. Validate Lead ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -381,30 +381,38 @@ const updateMyLead = async (req, res) => {
       });
     }
 
-    // 2. Validate status
-    if (!status) {
+    // 5. Validate status
+    const allowedStatuses = [
+      "qualified",
+      "not_qualified",
+      "not_connected",
+      "converted",
+    ];
+
+    if (!status || !allowedStatuses.includes(status)) {
+      console.error("Invalid Lead Status:", {
+        receivedStatus: req.body.status,
+        normalizedStatus: rawStatus,
+      });
+
       return res.status(400).json({
         success: false,
         message: "Please select a valid lead status.",
         receivedStatus: req.body.status,
-        allowedStatuses: [
-          "qualified",
-          "not_qualified",
-          "not_connected",
-          "converted",
-        ],
+        normalizedStatus: rawStatus,
+        allowedStatuses,
       });
     }
 
-    // 3. Validate remarks
+    // 6. Validate remarks
     if (!remarks) {
       return res.status(400).json({
         success: false,
-        message: "Remarks are mandatory.",
+        message: "Remarks are mandatory for every lead update.",
       });
     }
 
-    // 4. Validate follow-up date
+    // 7. Validate follow-up date
     let followUpDate = null;
 
     if (status !== "converted" && rawFollowUpDate) {
@@ -419,7 +427,7 @@ const updateMyLead = async (req, res) => {
       }
     }
 
-    // 5. Find lead within the same company and assigned executive
+    // 8. Find lead within same company and assigned executive
     const lead = await Lead.findOne({
       _id: id,
       companyId: req.user.companyId,
@@ -435,12 +443,12 @@ const updateMyLead = async (req, res) => {
 
     const now = new Date();
 
-    // 6. Update lead fields
+    // 9. Update lead
     lead.status = status;
     lead.remarks = remarks;
     lead.nextFollowUpDate = followUpDate;
 
-    // 7. Handle conversion date
+    // 10. Handle conversion date
     if (status === "converted") {
       if (!lead.convertedAt) {
         lead.convertedAt = now;
@@ -449,12 +457,12 @@ const updateMyLead = async (req, res) => {
       lead.convertedAt = null;
     }
 
-    // 8. Initialize activity history
+    // 11. Initialize activity history
     if (!Array.isArray(lead.activityHistory)) {
       lead.activityHistory = [];
     }
 
-    // 9. Save activity history
+    // 12. Add activity history
     lead.activityHistory.push({
       status,
       remarks,
@@ -463,10 +471,10 @@ const updateMyLead = async (req, res) => {
       updatedAt: now,
     });
 
-    // 10. Save lead
+    // 13. Save lead
     await lead.save();
 
-    // 11. Get company field settings
+    // 14. Get company field settings
     const company = await Company.findById(req.user.companyId)
       .select("leadFieldSettings")
       .lean();
@@ -476,12 +484,14 @@ const updateMyLead = async (req, res) => {
       ...(company?.leadFieldSettings || {}),
     };
 
-    // 12. Send response
+    // 15. Success response
     return res.status(200).json({
       success: true,
       message:
         status === "converted"
           ? "Lead marked as converted successfully."
+          : status === "qualified"
+          ? "Lead marked as qualified successfully."
           : "Lead updated successfully.",
       lead: filterLeadFields(lead, settings),
     });
@@ -489,7 +499,6 @@ const updateMyLead = async (req, res) => {
   } catch (error) {
     console.error("Update My Lead Error:", error);
 
-    // Mongoose validation errors
     if (error.name === "ValidationError") {
       return res.status(400).json({
         success: false,
@@ -505,6 +514,7 @@ const updateMyLead = async (req, res) => {
     });
   }
 };
+
 
 
     let followUpDate = null;
