@@ -112,37 +112,79 @@ function SalesExecutiveDashboard({ onLogout }) {
   };
 
   // Update lead
-  const handleUpdate = async (e) => {
-    e.preventDefault();
+  
+const handleUpdate = async (e) => {
+  e.preventDefault();
 
-    if (!remarks.trim()) {
-      setMessage("Please enter mandatory remarks.");
-      return;
-    }
+  if (!selectedLead?._id) {
+    setMessage("Please select a valid lead.");
+    return;
+  }
 
-    try {
-      setSaving(true);
-      setMessage("");
+  if (!remarks.trim()) {
+    setMessage("Please enter mandatory remarks.");
+    return;
+  }
 
-      await api.patch(`/leads/${selectedLead._id}/update`, {
-        status,
-        remarks: remarks.trim(),
-        nextFollowUpDate:
-          status === "converted" ? null : nextFollowUpDate || null,
-      });
+  // Normalize status before sending to backend
+  const normalizedStatus = String(status || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
 
-      setSelectedLead(null);
-      setMessage("Lead updated successfully!");
+  const allowedStatuses = [
+    "qualified",
+    "not_qualified",
+    "not_connected",
+    "converted",
+  ];
 
-      await fetchMyLeads();
-    } catch (err) {
-      setMessage(
-        err.response?.data?.message || "Unable to update lead."
-      );
-    } finally {
-      setSaving(false);
-    }
+  if (!allowedStatuses.includes(normalizedStatus)) {
+    setMessage("Please select a valid lead status.");
+    return;
+  }
+
+  const payload = {
+    status: normalizedStatus,
+    remarks: remarks.trim(),
+    nextFollowUpDate:
+      normalizedStatus === "converted"
+        ? null
+        : nextFollowUpDate || null,
   };
+
+  console.log("LEAD UPDATE PAYLOAD:", payload);
+
+  try {
+    setSaving(true);
+    setMessage("");
+
+    const response = await api.patch(
+      `/leads/${selectedLead._id}/update`,
+      payload
+    );
+
+    console.log("LEAD UPDATE RESPONSE:", response.data);
+
+    setSelectedLead(null);
+    setMessage("Lead updated successfully!");
+
+    await fetchMyLeads();
+  } catch (err) {
+    console.error(
+      "LEAD UPDATE ERROR:",
+      err.response?.data || err.message
+    );
+
+    setMessage(
+      err.response?.data?.message ||
+      "Unable to update lead. Please try again."
+    );
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   const qualifiedCount = leads.filter(
     (lead) => lead.status === "qualified"
