@@ -334,11 +334,33 @@ const getMyLeads = async (req, res) => {
 // ==========================================
 
 
+// ==========================================
+// 4. SALES EXECUTIVE: UPDATE ASSIGNED LEAD
+// ==========================================
+
 const updateMyLead = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, remarks, nextFollowUpDate } = req.body;
 
+    // Support common frontend field-name variations
+    const status = String(req.body.status || "")
+      .trim()
+      .toLowerCase();
+
+    const remarks = String(
+      req.body.remarks ??
+      req.body.remark ??
+      req.body.notes ??
+      ""
+    ).trim();
+
+    const rawFollowUpDate =
+      req.body.nextFollowUpDate ??
+      req.body.nextFollowupDate ??
+      req.body.followUpDate ??
+      null;
+
+    // Validate Lead ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -346,6 +368,7 @@ const updateMyLead = async (req, res) => {
       });
     }
 
+    // Allowed statuses
     const allowedStatuses = [
       "qualified",
       "not_qualified",
@@ -356,19 +379,110 @@ const updateMyLead = async (req, res) => {
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: "Please select a valid lead status.",
+        message: "Invalid lead status.",
+        receivedStatus: req.body.status,
+        allowedStatuses,
       });
     }
 
-    if (
-      typeof remarks !== "string" ||
-      !remarks.trim()
-    ) {
+    // Remarks validation
+    if (!remarks) {
       return res.status(400).json({
         success: false,
         message: "Remarks are mandatory for every lead update.",
       });
     }
+
+    // Validate follow-up date
+    let followUpDate = null;
+
+    if (status !== "converted" && rawFollowUpDate) {
+      followUpDate = new Date(rawFollowUpDate);
+
+      if (Number.isNaN(followUpDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid next follow-up date.",
+          receivedDate: rawFollowUpDate,
+        });
+      }
+    }
+
+    // Find lead belonging to the same company and assigned executive
+    const lead = await Lead.findOne({
+      _id: id,
+      companyId: req.user.companyId,
+      assignedTo: req.user.userId,
+    });
+
+    if (!lead) {
+      return res.status(404).json({
+        success: false,
+        message: "Lead not found or not assigned to you.",
+      });
+    }
+
+    const now = new Date();
+
+    // Update lead
+    lead.status = status;
+    lead.remarks = remarks;
+    lead.nextFollowUpDate = followUpDate;
+
+    // Conversion handling
+    if (status === "converted") {
+      if (!lead.convertedAt) {
+        lead.convertedAt = now;
+      }
+    } else {
+      lead.convertedAt = null;
+    }
+
+    // Initialize activity history if missing
+    if (!Array.isArray(lead.activityHistory)) {
+      lead.activityHistory = [];
+    }
+
+    // Save activity history
+    lead.activityHistory.push({
+      status,
+      remarks,
+      updatedBy: req.user.userId,
+      nextFollowUpDate: followUpDate,
+      updatedAt: now,
+    });
+
+    await lead.save();
+
+    // Get company field settings
+    const company = await Company.findById(req.user.companyId)
+      .select("leadFieldSettings")
+      .lean();
+
+    const settings = {
+      ...defaultLeadFieldSettings,
+      ...(company?.leadFieldSettings || {}),
+    };
+
+    return res.status(200).json({
+      success: true,
+      message:
+        status === "converted"
+          ? "Lead marked as converted successfully."
+          : "Lead updated successfully.",
+      lead: filterLeadFields(lead, settings),
+    });
+
+  } catch (error) {
+    console.error("Update My Lead Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update lead.",
+      error: error.message,
+    });
+  }
+};
 
     let followUpDate = null;
 
