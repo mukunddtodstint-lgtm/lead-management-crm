@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import api from "../../services/api";
 import FollowUps from "../company-admin/FollowUps";
@@ -14,27 +13,16 @@ import {
   ClipboardList,
 } from "lucide-react";
 
+// ==========================================
+// LEAD FIELD DEFINITIONS
+// ==========================================
+
 const leadFieldDefinitions = [
-  {
-    key: "created_time",
-    label: "Created Time",
-  },
-  {
-    key: "full_name",
-    label: "Name",
-  },
-  {
-    key: "phone_number",
-    label: "Phone",
-  },
-  {
-    key: "email",
-    label: "Email",
-  },
-  {
-    key: "city",
-    label: "City",
-  },
+  { key: "created_time", label: "Created Time" },
+  { key: "full_name", label: "Name" },
+  { key: "phone_number", label: "Phone" },
+  { key: "email", label: "Email" },
+  { key: "city", label: "City" },
   {
     key: "what_are_you_looking_for?",
     label: "Looking For",
@@ -45,7 +33,10 @@ const leadFieldDefinitions = [
   },
 ];
 
-// Lead status labels
+// ==========================================
+// STATUS LABELS
+// ==========================================
+
 const getStatusLabel = (status) => {
   const labels = {
     new: "New",
@@ -55,36 +46,72 @@ const getStatusLabel = (status) => {
     converted: "Converted",
   };
 
-  return labels[status] || status;
+  return labels[status] || status || "New";
 };
+
+// ==========================================
+// SALES EXECUTIVE DASHBOARD
+// ==========================================
 
 function SalesExecutiveDashboard({ onLogout }) {
   const [leads, setLeads] = useState([]);
+  const [totalLeads, setTotalLeads] = useState(0);
   const [settings, setSettings] = useState({});
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [selectedLead, setSelectedLead] = useState(null);
+
   const [status, setStatus] = useState("qualified");
   const [remarks, setRemarks] = useState("");
   const [nextFollowUpDate, setNextFollowUpDate] = useState("");
+
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+
   const [activeView, setActiveView] = useState("leads");
 
-  // Fetch settings and assigned leads
+  // ==========================================
+  // FETCH ASSIGNED LEADS AND SETTINGS
+  // ==========================================
+
   const fetchMyLeads = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const [leadsResponse, settingsResponse] = await Promise.all([
-        api.get("/leads/my-leads"),
-        api.get("/companies/lead-field-settings"),
-      ]);
+      const [leadsResponse, settingsResponse] =
+        await Promise.all([
+          api.get("/leads/my-leads"),
+          api.get("/companies/lead-field-settings"),
+        ]);
 
-      setLeads(leadsResponse.data.leads || []);
-      setSettings(settingsResponse.data.settings || {});
+      const fetchedLeads =
+        leadsResponse.data?.leads || [];
+
+      setLeads(fetchedLeads);
+
+      setTotalLeads(
+        leadsResponse.data?.totalLeads ?? fetchedLeads.length
+      );
+
+      setSettings(
+        settingsResponse.data?.settings || {}
+      );
+
+      console.log("MY LEADS:", fetchedLeads);
+      console.log(
+        "LEAD FIELD SETTINGS:",
+        settingsResponse.data?.settings
+      );
+
     } catch (err) {
+      console.error(
+        "FETCH LEADS ERROR:",
+        err.response?.data || err.message
+      );
+
       setError(
         err.response?.data?.message ||
           "Unable to load your leads and settings."
@@ -94,97 +121,159 @@ function SalesExecutiveDashboard({ onLogout }) {
     }
   };
 
+  // ==========================================
+  // INITIAL LOAD
+  // ==========================================
+
   useEffect(() => {
     fetchMyLeads();
   }, []);
 
-  // Only enabled fields will be displayed
+  // ==========================================
+  // VISIBLE LEAD FIELDS
+  // ==========================================
+
   const visibleFields = leadFieldDefinitions.filter(
     (field) => settings[field.key] !== false
   );
 
+  // ==========================================
+  // OPEN UPDATE FORM
+  // ==========================================
+
   const openUpdateForm = (lead) => {
     setSelectedLead(lead);
-    setStatus(lead.status || "qualified");
+
+    setStatus(
+      [
+        "qualified",
+        "not_qualified",
+        "not_connected",
+        "converted",
+      ].includes(lead.status)
+        ? lead.status
+        : "qualified"
+    );
+
     setRemarks("");
     setNextFollowUpDate("");
     setMessage("");
+    setError("");
+
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      behavior: "smooth",
+    });
   };
 
-  // Update lead
-  
-const handleUpdate = async (e) => {
-  e.preventDefault();
+  // ==========================================
+  // UPDATE LEAD
+  // ==========================================
 
-  if (!selectedLead?._id) {
-    setMessage("Please select a valid lead.");
-    return;
-  }
+  const handleUpdate = async (e) => {
+    e.preventDefault();
 
-  if (!remarks.trim()) {
-    setMessage("Please enter mandatory remarks.");
-    return;
-  }
+    if (!selectedLead?._id) {
+      setMessage("Please select a valid lead.");
+      return;
+    }
 
-  // Normalize status before sending to backend
-  const normalizedStatus = String(status || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
+    if (!remarks.trim()) {
+      setMessage("Remarks are mandatory.");
+      return;
+    }
 
-  const allowedStatuses = [
-    "qualified",
-    "not_qualified",
-    "not_connected",
-    "converted",
-  ];
+    const normalizedStatus = String(status || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
 
-  if (!allowedStatuses.includes(normalizedStatus)) {
-    setMessage("Please select a valid lead status.");
-    return;
-  }
+    const allowedStatuses = [
+      "qualified",
+      "not_qualified",
+      "not_connected",
+      "converted",
+    ];
 
-  const payload = {
-    status: normalizedStatus,
-    remarks: remarks.trim(),
-    nextFollowUpDate:
-      normalizedStatus === "converted"
-        ? null
-        : nextFollowUpDate || null,
+    if (!allowedStatuses.includes(normalizedStatus)) {
+      setMessage("Please select a valid lead status.");
+      return;
+    }
+
+    // Prepare API payload
+    const payload = {
+      status: normalizedStatus,
+      remarks: remarks.trim(),
+      nextFollowUpDate:
+        normalizedStatus === "converted"
+          ? null
+          : nextFollowUpDate || null,
+    };
+
+    console.log("========== LEAD UPDATE ==========");
+    console.log("LEAD ID:", selectedLead._id);
+    console.log("UPDATE PAYLOAD:", payload);
+    console.log("=================================");
+
+    try {
+      setSaving(true);
+      setMessage("");
+      setError("");
+
+      // PATCH API
+      const response = await api.patch(
+        `/leads/${selectedLead._id}/update`,
+        payload
+      );
+
+      console.log(
+        "LEAD UPDATE RESPONSE:",
+        response.data
+      );
+
+      if (!response.data?.success) {
+        throw new Error(
+          response.data?.message ||
+            "Lead update failed."
+        );
+      }
+
+      // Close form
+      setSelectedLead(null);
+
+      setRemarks("");
+      setNextFollowUpDate("");
+
+      // Refresh assigned leads
+      await fetchMyLeads();
+
+      // Display backend success message
+      setMessage(
+        response.data?.message ||
+          "Lead updated successfully!"
+      );
+
+    } catch (err) {
+      console.error(
+        "LEAD UPDATE ERROR:",
+        err.response?.data || err.message
+      );
+
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Unable to update lead. Please try again.";
+
+      setMessage(errorMessage);
+
+    } finally {
+      setSaving(false);
+    }
   };
 
-  console.log("LEAD UPDATE PAYLOAD:", payload);
-
-  try {
-    setSaving(true);
-    setMessage("");
-
-    const response = await api.patch(
-      `/leads/${selectedLead._id}/update`,
-      payload
-    );
-
-    console.log("LEAD UPDATE RESPONSE:", response.data);
-
-    setSelectedLead(null);
-    setMessage("Lead updated successfully!");
-
-    await fetchMyLeads();
-  } catch (err) {
-    console.error(
-      "LEAD UPDATE ERROR:",
-      err.response?.data || err.message
-    );
-
-    setMessage(
-      err.response?.data?.message ||
-      "Unable to update lead. Please try again."
-    );
-  } finally {
-    setSaving(false);
-  }
-};
-
+  // ==========================================
+  // DASHBOARD STATISTICS
+  // ==========================================
 
   const qualifiedCount = leads.filter(
     (lead) => lead.status === "qualified"
@@ -194,6 +283,10 @@ const handleUpdate = async (e) => {
     (lead) => lead.status === "not_connected"
   ).length;
 
+  // ==========================================
+  // LOADING SCREEN
+  // ==========================================
+
   if (loading) {
     return (
       <div className="sales-dashboard">
@@ -202,24 +295,36 @@ const handleUpdate = async (e) => {
     );
   }
 
+  // ==========================================
+  // MAIN DASHBOARD
+  // ==========================================
+
   return (
     <div className="sales-dashboard">
 
-      {/* Header */}
+      {/* HEADER */}
+
       <div className="sales-header">
         <div>
           <h1>Sales Executive Dashboard</h1>
-          <p>Manage your assigned leads and follow-ups.</p>
+          <p>
+            Manage your assigned leads and follow-ups.
+          </p>
         </div>
 
-        <button className="sales-logout" onClick={onLogout}>
+        <button
+          className="sales-logout"
+          onClick={onLogout}
+        >
           <LogOut size={17} />
           Logout
         </button>
       </div>
 
-      {/* Dashboard Navigation */}
+      {/* NAVIGATION */}
+
       <div className="sales-view-navigation">
+
         <button
           className={
             activeView === "leads"
@@ -251,20 +356,28 @@ const handleUpdate = async (e) => {
           <CalendarDays size={18} />
           Follow-ups
         </button>
+
       </div>
 
-      {/* Follow-ups Section */}
-      {activeView === "followups" && <FollowUps />}
+      {/* FOLLOW-UPS */}
 
-      {/* Assigned Leads Section */}
+      {activeView === "followups" && (
+        <FollowUps />
+      )}
+
+      {/* MY ASSIGNED LEADS */}
+
       {activeView === "leads" && (
         <>
-          {/* Statistics */}
+
+          {/* STATISTICS */}
+
           <div className="sales-summary">
+
             <div className="sales-stat-card">
               <Users size={24} />
               <p>Total Assigned Leads</p>
-              <h2>{leads.length}</h2>
+              <h2>{totalLeads}</h2>
             </div>
 
             <div className="sales-stat-card">
@@ -278,47 +391,74 @@ const handleUpdate = async (e) => {
               <p>Not Connected</p>
               <h2>{notConnectedCount}</h2>
             </div>
+
           </div>
 
+          {/* ERROR MESSAGE */}
+
           {error && (
-            <div className="sales-error">{error}</div>
+            <div className="sales-error">
+              {error}
+            </div>
           )}
+
+          {/* SUCCESS / UPDATE MESSAGE */}
 
           {message && (
-            <div className="sales-message">{message}</div>
+            <div className="sales-message">
+              {message}
+            </div>
           )}
 
-          {/* Leads Table */}
+          {/* LEADS TABLE */}
+
           <div className="sales-leads-card">
+
             <h2>My Assigned Leads</h2>
 
             {leads.length === 0 ? (
+
               <div className="sales-empty">
                 <Users size={40} />
                 <h3>No Leads Assigned Yet</h3>
-                <p>Your assigned leads will appear here.</p>
+                <p>
+                  Your assigned leads will appear here.
+                </p>
               </div>
+
             ) : (
+
               <div className="sales-table-wrapper">
+
                 <table className="sales-table">
+
                   <thead>
                     <tr>
+
                       {visibleFields.map((field) => (
-                        <th key={field.key}>{field.label}</th>
+                        <th key={field.key}>
+                          {field.label}
+                        </th>
                       ))}
 
                       <th>Status</th>
                       <th>Action</th>
+
                     </tr>
                   </thead>
 
                   <tbody>
+
                     {leads.map((lead) => (
+
                       <tr key={lead._id}>
+
                         {visibleFields.map((field) => (
+
                           <td key={field.key}>
-                            {lead.leadData?.[field.key] || "-"}
+                            {lead.leadData?.[field.key] ?? "-"}
                           </td>
+
                         ))}
 
                         <td>
@@ -327,29 +467,43 @@ const handleUpdate = async (e) => {
                               lead.status || "new"
                             }`}
                           >
-                            {getStatusLabel(lead.status || "new")}
+                            {getStatusLabel(lead.status)}
                           </span>
                         </td>
 
                         <td>
+
                           <button
                             className="sales-btn"
-                            onClick={() => openUpdateForm(lead)}
+                            onClick={() =>
+                              openUpdateForm(lead)
+                            }
                           >
                             Update Lead
                           </button>
+
                         </td>
+
                       </tr>
+
                     ))}
+
                   </tbody>
+
                 </table>
+
               </div>
+
             )}
+
           </div>
 
-          {/* Update Lead Form */}
+          {/* UPDATE LEAD FORM */}
+
           {selectedLead && (
+
             <div className="sales-form-card">
+
               <h2>Update Lead</h2>
 
               <p>
@@ -361,55 +515,91 @@ const handleUpdate = async (e) => {
               </p>
 
               <form onSubmit={handleUpdate}>
+
+                {/* STATUS */}
+
                 <label>Lead Status *</label>
 
                 <select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value)}
+                  onChange={(e) =>
+                    setStatus(e.target.value)
+                  }
                   required
                 >
-                  <option value="qualified">Qualified</option>
-                  <option value="not_qualified">Not Qualified</option>
-                  <option value="not_connected">Not Connected</option>
-                  <option value="converted">Converted</option>
+
+                  <option value="qualified">
+                    Qualified
+                  </option>
+
+                  <option value="not_qualified">
+                    Not Qualified
+                  </option>
+
+                  <option value="not_connected">
+                    Not Connected
+                  </option>
+
+                  <option value="converted">
+                    Converted
+                  </option>
+
                 </select>
+
+                {/* REMARKS */}
 
                 <label>Remarks *</label>
 
                 <textarea
                   value={remarks}
-                  onChange={(e) => setRemarks(e.target.value)}
+                  onChange={(e) =>
+                    setRemarks(e.target.value)
+                  }
                   placeholder="Enter conversation details or reason..."
                   rows={4}
                   required
                 />
 
+                {/* FOLLOW-UP DATE */}
+
                 {status !== "converted" && (
                   <>
-                    <label>Next Follow-up Date</label>
+
+                    <label>
+                      Next Follow-up Date
+                    </label>
 
                     <input
                       type="date"
                       value={nextFollowUpDate}
                       onChange={(e) =>
-                        setNextFollowUpDate(e.target.value)
+                        setNextFollowUpDate(
+                          e.target.value
+                        )
                       }
                     />
+
                   </>
                 )}
 
+                {/* FORM ACTIONS */}
+
                 <div className="sales-form-actions">
+
                   <button
                     type="submit"
                     className="sales-btn"
                     disabled={saving}
                   >
-                    {saving ? "Saving..." : "Save Update"}
+                    {saving
+                      ? "Saving..."
+                      : "Save Update"}
                   </button>
 
                   <button
                     type="button"
                     className="sales-cancel-btn"
+                    disabled={saving}
                     onClick={() => {
                       setSelectedLead(null);
                       setMessage("");
@@ -417,12 +607,18 @@ const handleUpdate = async (e) => {
                   >
                     Cancel
                   </button>
+
                 </div>
+
               </form>
+
             </div>
+
           )}
+
         </>
       )}
+
     </div>
   );
 }
