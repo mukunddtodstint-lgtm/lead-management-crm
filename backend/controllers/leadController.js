@@ -341,6 +341,8 @@ const getMyLeads = async (req, res) => {
 
 const updateMyLead = async (req, res) => {
   try {
+    console.log("BACKEND RECEIVED BODY:", req.body);
+console.log("BACKEND RECEIVED STATUS:", req.body.status);
     console.log("========== LEAD UPDATE DEBUG ==========");
 console.log("Request Body:", JSON.stringify(req.body, null, 2));
 console.log("Received Status:", req.body.status);
