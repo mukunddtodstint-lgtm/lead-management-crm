@@ -341,6 +341,11 @@ const getMyLeads = async (req, res) => {
 
 const updateMyLead = async (req, res) => {
   try {
+    console.log("========== LEAD UPDATE DEBUG ==========");
+console.log("Request Body:", JSON.stringify(req.body, null, 2));
+console.log("Received Status:", req.body.status);
+console.log("Status Type:", typeof req.body.status);
+console.log("=======================================");
     const { id } = req.params;
 
     // 1. Normalize incoming status
